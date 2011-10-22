@@ -65,19 +65,22 @@ create.master <- function(fn,spectral_fn) {
 	# "Band" class.
 	
 	# gau=gaussian and apx=spectral approx function
-	i<-list(gau=function(x) 1,apx=function(x) 1)
+	i<-list(apx=function(x) {1})
 	spc$info<-rep(i,50)
-	
+
 	for (i in 1:50) {
 		l<-spc$l[i]
 		r<-spc$r[i]
 		c<-spc$lambda[i]
-#		sens<-data.frame(lambda=c(l,c,r),R=c(0.5,1,0.5))
-		sens<-data.frame(lambda=sfnt[,1]*1000,R=sfnt[,2])
+		if (i > 25) 
+		{	sens<-data.frame(lambda=c(l,c,r),R=c(0.5,1,0.5))
+		} else {
+			sens<-data.frame(lambda=sfnt[,1]*1000,R=sfnt[,i+1])
+		}
 		gau<-make.gaussian(c,r-l)	
 		apx<-approxfun(sens$lambda,sens$R)
 		fs<-splinefun(sens$lambda,sens$R)
-		spc$info[i]$gau<-gau
+#		spc$info[i]$gau<-gau
 		spc$info[i]$apx<-apx
 #		spc$info[i]$fs<-fs
 #		info[[i]]<-list(g=g,fs=fs,sens=sens)
@@ -87,15 +90,14 @@ create.master <- function(fn,spectral_fn) {
 	master
 }
 
+
 master<-create.master("/Users/quinn/master/MASTERL1B_1165100_04_20110608_2305_2310_V00.hdf",
 		'/Users/quinn/master/av_master/master_bandpass_2011_08_20.txt')
-
-
 # Now get the factors that you need for AVIRIS calculation
 master$bands$av_max_band<-0
 afacts<-list()
 for (i in 1:50) {
-	g<-master$bands$info[i]$g
+	g<-master$bands$info[i]$apx
 	af<-g(aviris$bands$lambda)
 	# Remove factors for 160 (questionable lambda) 
 	af[160]<-0
@@ -105,7 +107,7 @@ for (i in 1:50) {
 	
 	bands<-which(af>0.03)
 	norm<-sum(af[bands])
-	master$bands$av_max_band[i]<-which(af==max(af))[1]
+	master$bands$av_max_band[i]<-which(af==max(af[bands]))[1]
 	
 	# Normalize the sum back to radiance
 	gnorm<-sum(gf[bands])
@@ -147,7 +149,7 @@ for (m in 1:25) {
 par(ask = TRUE)
 for (i in 1:25) {
 	b<-master$bands[i,]
-	plot(function(x) b$info$g(x),b$lambda-b$fwhm,b$lambda+b$fwhm,ylab="Filter Response",xlab="Wavelength [nm]")
+	plot(function(x) b$info$apx(x),b$lambda-b$fwhm,b$lambda+b$fwhm,ylab="Filter Response",xlab="Wavelength [nm]")
 	curve(b$av_info$g(x),add=TRUE,col=2)
 	
 #	points(sfnt[,1],sfnt[,1+i],col=3)
@@ -156,7 +158,7 @@ for (i in 1:25) {
 #	title(xlab="Wavelength [nm]")
 #	title(ylab="Filter Response")
 	
-	mx<-integrate(function(x) b$info$g(x),b$lambda-b$fwhm,b$lambda+b$fwhm)$value/
+	mx<-integrate(function(x) b$info$apx(x),b$lambda-b$fwhm,b$lambda+b$fwhm)$value/
 			integrate(function(x) b$av_info$g(x),b$lambda-b$fwhm,b$lambda+b$fwhm)$value
 	print(mx)
 }
