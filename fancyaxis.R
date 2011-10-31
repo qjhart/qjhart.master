@@ -327,7 +327,7 @@ fancyaxis <- function(side, summ, at=NULL, mingap=0.5, digits=2,
 
 # Draw a stripchart on an axis, showing marginal frequency
 # TODO: Does not handle log axes well
-axisstripchart <- function(x, side, sshift=0.3) {
+axisstripchart <- function(x, side, sshift=0.3,divisions=100,xlim) {
   # x:    the data from which the plots are to be produced.
   # side: as in axis()
   
@@ -396,7 +396,9 @@ axisstripchart <- function(x, side, sshift=0.3) {
   # Don't clip the chart
   oldxpd <- par(xpd = TRUE)
   on.exit(par(oldxpd))
-  
-  stripchart(x, method="stack", vertical=yaxis, offset=offset, pch=15,
-             cex=0.2, add=TRUE, at=base+shift+stripshift, col="red")
+  per<-divisions/(max(x)-min(x))
+  x<-floor((x*per))/per
+  stripchart(x, method="stack", vertical=yaxis*3, offset=offset/3, pch=15,
+             cex=0.3, add=TRUE, at=base+shift+stripshift, col="red",
+			 xlim=xlim,ylim=xlim)
 }
